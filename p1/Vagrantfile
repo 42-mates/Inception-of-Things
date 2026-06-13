@@ -1,0 +1,56 @@
+
+LOGIN = "akurochk"
+
+Vagrant.configure("2") do |config|
+
+    config.vm.box = "debian/bookworm64"
+    config.vm.box_check_update = false
+    config.ssh.insert_key = false
+    
+    # Example from subject:
+    #
+    # config.vm.define "wilSW" do |control|
+    #     control.vm.hostname = "wilSW"
+    #     control.vm.network REDACTED, ip: "192.168.56.111"
+    #     control.vm.provider REDACTED do |v|
+    #         v.customize ["modifyvm", :id, "--name", "wilSW"]
+    #         [...]
+    #     end
+    #     config.vm.provision "shell", inline: <<-SHELL
+    #         [..]
+    #     SHELL
+    # end
+
+    config.vm.define "#{LOGIN}S" do |server|
+        server.vm.hostname = "#{LOGIN}S"
+        server.vm.network "fox_net", ip: "192.168.56.110"
+        server.vm.provider "virtualbox" do |v|
+            v.customize ["modifyvm", :id, "--name", "#{LOGIN}S"]
+            v.name = "#{LOGIN}S"
+            v.memory = 1024                 # or 512
+            v.cpus = 1
+        end
+        server.vm.provision "shell", inline: <<-SHELL
+            # [...] bash and curl to install
+        SHELL
+
+        server.vm.provision "shell", path: "scripts/server.sh"
+    end
+
+    config.vm.define "#{LOGIN}SW" do |worker|
+        worker.vm.hostname = "#{LOGIN}SW"
+        worker.vm.network "fox_net", ip: "192.168.56.111"
+        worker.vm.provider "virtualbox" do |v|
+            v.customize ["modifyvm", :id, "--name", "#{LOGIN}SW"]
+            v.name = "#{LOGIN}SW"
+            v.memory = 1024                 # or 512
+            v.cpus = 1
+        end
+        worker.vm.provision "shell", inline: <<-SHELL
+            # [...] bash and curl to install
+        SHELL
+
+        worker.vm.provision "shell", path: "scripts/worker.sh"
+    end
+
+end
