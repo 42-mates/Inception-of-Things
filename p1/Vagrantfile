@@ -1,5 +1,6 @@
 # Variables
 LOGIN = "akurochk"
+OS = "debian/bookworm64"
 # private network name, can be changed to any other name
 NETWORK_NAME = "fox_net"
 PROVIDER = "virtualbox"
@@ -14,7 +15,7 @@ SCRIPT_WORKER = "scripts/worker.sh"
 Vagrant.configure("2") do |config|
 
     # Common settings
-    config.vm.box = "debian/bookworm64"
+    config.vm.box = "#{OS}"
     config.vm.box_check_update = false
     config.ssh.insert_key = false
 
