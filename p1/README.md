@@ -58,3 +58,24 @@ kubectl get pods -A
 | `vagrant ssh <login>SW`      | SSH to worker            |
 | `journalctl -u k3s -f`       | View K3s server logs     |
 | `journalctl -u k3s-agent -f` | View K3s agent logs      |
+
+
+Delete vm if exist
+
+```bash
+VBoxManage list vms
+...
+VBoxManage unregistervm <name> --delete
+```
+
+
+Free CPU
+```bash
+sudo modprobe -r kvm_intel kvm_amd kvm
+
+sudo nano /etc/modprobe.d/blacklist-kvm.conf
+# add:
+# blacklist kvm
+# blacklist kvm_intel
+# blacklist kvm_amd
+```
