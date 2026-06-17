@@ -1,8 +1,7 @@
 # Variables
 LOGIN = "akurochk"
-OS = "debian/bookworm64"
-# private network name, can be changed to any other name
-NETWORK_NAME = "fox_net"
+OS = "debian/trixie64"
+NETWORK_NAME = "private_network"
 PROVIDER = "virtualbox"
 SERVER_IP = "192.168.56.110"
 WORKER_IP = "192.168.56.111"
