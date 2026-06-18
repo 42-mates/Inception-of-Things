@@ -20,3 +20,5 @@ vagrant destroy -f
 
 rm -rf .vagrant
 rm -rf node-token
+
+VBoxManage list vms

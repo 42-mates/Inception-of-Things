@@ -65,7 +65,7 @@ Delete vm if exist
 ```bash
 VBoxManage list vms
 ...
-VBoxManage unregistervm <name> --delete
+VBoxManage unregistervm akurochkS --delete
 ```
 
 ```bash
@@ -99,4 +99,8 @@ sudo nano /etc/modprobe.d/blacklist-kvm.conf
 
 ```bash
 vagrant up 2>&1 | tee -a logs.txt
+```
+
+```bash
+vagrant plugin install vagrant-vbguest
 ```
