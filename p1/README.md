@@ -96,3 +96,7 @@ sudo nano /etc/modprobe.d/blacklist-kvm.conf
 # blacklist kvm_intel
 # blacklist kvm_amd
 ```
+
+```bash
+vagrant up 2>&1 | tee -a logs.txt
+```
