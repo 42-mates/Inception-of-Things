@@ -6,6 +6,7 @@
 # -o pipefail  The whole pipeline fails if any command fails. The script returns the exit code of 
 #              the last command in a pipeline that failed.
 set -euo pipefail
+apt-get update && apt-get install -y curl bash
 
 # Private network IP of the K3s server
 SERVER_IP="192.168.56.110"
@@ -39,10 +40,15 @@ echo ">>> Token found. Installing K3s agent..."
 #   --token "${TOKEN}"                      Provide the token for authentication with the server.
 #   --node-ip "${WORKER_IP}"                Specify the worker (agent) node's IP address in the cluster.
 #   --flannel-iface eth1                    Specify the network interface (eth1 - private network interface in Vagrant).
-curl -sfL https://get.k3s.io | sh -s - agent \
+curl -sfL https://get.k3s.io | sh - agent \
     --server "https://${SERVER_IP}:6443" \
     --token "${TOKEN}" \
-    --node-ip "${WORKER_IP}" \
-    --flannel-iface eth1
+    --node-ip "${WORKER_IP}"
+    # --flannel-iface eth1
+
+until systemctl is-active --quiet k3s-agent 2>/dev/null; do
+    echo "  ... still waiting"
+    sleep 5
+done
 
 echo ">>> K3s agent installed and running."

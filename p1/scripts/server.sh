@@ -6,6 +6,7 @@
 # -o pipefail  The whole pipeline fails if any command fails. The script returns the exit code of 
 #              the last command in a pipeline that failed.
 set -euo pipefail
+apt-get update && apt-get install -y curl bash
 
 # Private network IP of the K3s server
 SERVER_IP="192.168.56.110"
@@ -27,12 +28,12 @@ echo ">>> Installing K3s in server mode..."
 #   --advertise-address         The IP agents use to reach the API server.
 #   --node-ip                   Node's IP in the cluster, recommendet to specify the value explicitly.
 #   --flannel-iface             Specify the network interface (eth1 - private network interface in Vagrant).
-curl -sfL https://get.k3s.io | sh -s - server \
+curl -sfL https://get.k3s.io | sh - server \
     --write-kubeconfig-mode 644 \
     --bind-address "${SERVER_IP}" \
     --advertise-address "${SERVER_IP}" \
-    --node-ip "${SERVER_IP}" \
-    --flannel-iface eth1
+    --node-ip "${SERVER_IP}"
+    # --flannel-iface eth1
 
 # Wait for K3s to be ready
 echo ">>> Waiting for K3s server to be ready..."
