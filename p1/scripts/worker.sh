@@ -40,11 +40,19 @@ echo ">>> Token found. Installing K3s agent..."
 #   --token "${TOKEN}"                      Provide the token for authentication with the server.
 #   --node-ip "${WORKER_IP}"                Specify the worker (agent) node's IP address in the cluster.
 #   --flannel-iface eth1                    Specify the network interface (eth1 - private network interface in Vagrant).
-curl -sfL https://get.k3s.io | sh -s - agent \
-    --server "https://${SERVER_IP}:6443" \
-    --token "${TOKEN}" \
-    --node-ip "${WORKER_IP}" \
-    --flannel-iface eth1
+
+# curl -sfL https://get.k3s.io | sh -s - agent \
+#     --server "https://${SERVER_IP}:6443" \
+#     --token "${TOKEN}" \
+#     --node-ip "${WORKER_IP}" \
+#     --flannel-iface eth1
+
+curl -fL https://get.k3s.io -o install.sh
+bash -x install.sh agent \
+  --server "https://${SERVER_IP}:6443" \
+  --token "${TOKEN}" \
+  --node-ip "${WORKER_IP}" \
+  --flannel-iface eth1
 
 # until systemctl is-active --quiet k3s-agent 2>/dev/null; do
 #     echo "  ... still waiting"
