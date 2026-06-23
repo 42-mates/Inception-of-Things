@@ -16,15 +16,15 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm -f get-docker.sh
 
-echo "# install kubectl"
+echo -e "# install kubectl"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm -f kubectl
 
-echo "# install k3d"
+echo -e "# install k3d"
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-echo "# create the cluster"
+echo -e "# create the cluster"
 sudo k3d cluster delete k3s-default
 sudo k3d cluster create k3s-default \
   --servers 1 \
@@ -40,18 +40,20 @@ sudo k3d kubeconfig merge k3s-default --kubeconfig-switch-context
 
 sleep 6
 
-echo "# create the namespace argocd and dev"
+echo -e "# create the namespace argocd and dev"
 sudo kubectl create namespace argocd
 sudo kubectl create namespace dev
 
 sleep 6
 
-echo "${G}install ArgoCD${R}"
+echo -e "${G}install ArgoCD${R}"
 # this is config by default
 sudo kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
+# sed -i '/kubectl.kubernetes.io\/last-applied-configuration/d' *.yaml
+
 sleep 10
-echo "${G}wait preparing of the pods of argocd${R}"
+echo -e "${G}wait preparing of the pods of argocd${R}"
 # sudo kubectl get pods -n argocd -w
 
 sudo kubectl wait --for=condition=ready pod --all -n argocd --timeout=10m
@@ -63,4 +65,24 @@ else
     exit 1
 fi
 
-echo "${G}Username: admin, Password: $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)${R}"
+# Remove the problem with CRD annotation
+sudo kubectl apply -f install.yaml --server-side --force-conflicts
+
+# Disable tls
+sudo kubectl config set-cluster $(kubectl config current-context) --insecure-skip-tls-verify=true 2>/dev/null || true
+
+PASSWORD=$(sudo kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+
+
+echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
+
+
+echo "changing default password to argocd"
+sudo kubectl -n argocd patch secret argocd-secret \
+  -p '{"stringData": {
+    "admin.password": "abergman.password",
+    "admin.passwordMtime": "'$(date +%FT%T%Z)'"
+  }}'
+echo "changed default password to argocd, waiting..."
+sleep 3
+
