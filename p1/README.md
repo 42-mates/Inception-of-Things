@@ -99,6 +99,8 @@ sudo nano /etc/modprobe.d/blacklist-kvm.conf
 
 ```bash
 vagrant up 2>&1 | tee -a logs.txt
+VAGRANT_LOG=debug vagrant up 2>&1 | tee -a logs.txt
+VAGRANT_LOG=info vagrant up 2>&1 | tee -a logs.txt
 ```
 
 ```bash
