@@ -21,4 +21,9 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 # create the cluster
 #
 sudo k3d cluster delete k3s-default
-sudo k3d cluster create k3s-default --api-port 6443 -p 8088:80@loadbalancer --agents 2
+sudo k3d cluster create k3s-default \
+  --servers 1 \
+  --agents 2 \
+  --api-port 6443 \
+  -p 8088:80@loadbalancer \
+  -p 8443:443@loadbalancer
