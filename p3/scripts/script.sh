@@ -9,7 +9,7 @@ Y='\e[33m'
 R='\e[0m'
 #
 # install curl
-sudo apt install -y curl vim
+sudo apt update && sudo apt install -y curl vim
 
 echo -e "${G}# install docker${R}"
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -25,8 +25,8 @@ echo -e "# install k3d"
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
 echo -e "# create the cluster"
-sudo k3d cluster delete k3s-default
-sudo k3d cluster create k3s-default \
+k3d cluster delete k3s-default 2>/dev/null || true
+k3d cluster create k3s-default \
   --servers 1 \
   --agents 2 \
   --api-port 6443 \
@@ -35,54 +35,64 @@ sudo k3d cluster create k3s-default \
 
 sleep 6
 
-sudo k3d kubeconfig merge k3s-default --kubeconfig-switch-context
+echo -e "# merge and switch context properly"
+k3d kubeconfig merge k3s-default --kubeconfig-switch-context
+
+# permissions on kubeconfig
+mkdir -p ~/.kube
+chmod 600 ~/.kube/config
+
 # kubectl get nodes
+
+# kubectl get nodes
+# Disable tls
+kubectl config set-cluster k3d-k3s-default --insecure-skip-tls-verify=true
+
+# kubectl get nodes
+if [ $? -ne 0 ]; then
+    echo -e "${RE}kubectl not connected to cluster${R}"
+    exit 1
+fi
 
 sleep 6
 
 echo -e "# create the namespace argocd and dev"
-sudo kubectl create namespace argocd
-sudo kubectl create namespace dev
+kubectl create namespace argocd 2>/dev/null || true
+kubectl create namespace dev 2>/dev/null || true
+
 
 sleep 6
 
 echo -e "${G}install ArgoCD${R}"
-# this is config by default
-sudo kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 # sed -i '/kubectl.kubernetes.io\/last-applied-configuration/d' *.yaml
 
-sleep 10
+# sleep 10
 echo -e "${G}wait preparing of the pods of argocd${R}"
 # sudo kubectl get pods -n argocd -w
 
-sudo kubectl wait --for=condition=ready pod --all -n argocd --timeout=10m
+kubectl wait --for=condition=ready pod --all -n argocd --timeout=10m
 
 if [ $? -eq 0 ]; then
     echo -e "${G}All Argo CD pods are ready!${R}"
 else
-    echo -e "${RE}Timeout: Some pods are not ready${R}"
+    echo -e "${RE}Timeout${R}"
     exit 1
 fi
 
 # Remove the problem with CRD annotation
-sudo kubectl apply -f install.yaml --server-side --force-conflicts
+# sudo kubectl apply -f install.yaml --server-side --force-conflicts
 
-# Disable tls
-sudo kubectl config set-cluster $(kubectl config current-context) --insecure-skip-tls-verify=true 2>/dev/null || true
 
-PASSWORD=$(sudo kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-
+PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
 echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
 
-
 echo "changing default password to argocd"
-sudo kubectl -n argocd patch secret argocd-secret \
-  -p '{"stringData": {
-    "admin.password": "abergman.password",
-    "admin.passwordMtime": "'$(date +%FT%T%Z)'"
-  }}'
-echo "changed default password to argocd, waiting..."
-sleep 3
+kubectl -n argocd patch secret argocd-secret \
+  -p "{\"stringData\": {\"admin.password\": \"argocd\", \"admin.passwordMtime\": \"$(date +%FT%T%Z)\"}}"
 
+echo -e "${Y}start port-forward on 8088${R}"
+sudo kill $(sudo lsof -t -i:8088) 2>/dev/null || true
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0 &
+echo "Username: admin, pass: argocd"
