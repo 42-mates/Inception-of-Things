@@ -4,7 +4,7 @@
 # cat ~/.ssh/id_ed25519.pub
 #
 G='\e[32m'
-R='\e[31m'
+RE='\e[31m'
 Y='\e[33m'
 R='\e[0m'
 #
@@ -48,4 +48,19 @@ sleep 6
 
 echo "${G}install ArgoCD${R}"
 # this is config by default
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+sudo kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+sleep 10
+echo "${G}wait preparing of the pods of argocd${R}"
+# sudo kubectl get pods -n argocd -w
+
+sudo kubectl wait --for=condition=ready pod --all -n argocd --timeout=10m
+
+if [ $? -eq 0 ]; then
+    echo -e "${G}All Argo CD pods are ready!${R}"
+else
+    echo -e "${RE}Timeout: Some pods are not ready${R}"
+    exit 1
+fi
+
+echo "${G}Username: admin, Password: $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)${R}"
