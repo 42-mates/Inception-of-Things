@@ -1,7 +1,7 @@
 echo "Scanning VMs..."
 
-virsh list --all
-virsh -c qemu:///system list --all
+# virsh list --all
+# virsh -c qemu:///system list --all
 
 # virsh destroy p1_akurochkS
 # virsh undefine p1_akurochkS --remove-all-storage

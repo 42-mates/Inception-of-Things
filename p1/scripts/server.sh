@@ -29,11 +29,12 @@ echo ">>> Installing K3s in server mode..."
 #   --node-ip                   Node's IP in the cluster, recommendet to specify the value explicitly.
 #   --flannel-iface             Specify the network interface (eth1 - private network interface in Vagrant).
 curl -sfL https://get.k3s.io | sh -s - server \
-    --write-kubeconfig-mode 644 \
-    --bind-address "${SERVER_IP}" \
-    --advertise-address "${SERVER_IP}" \
-    --node-ip "${SERVER_IP}" \
-    --flannel-iface eth1
+    --write-kubeconfig-mode=644 \
+#    --bind-address "${SERVER_IP}" \
+#    --advertise-address "${SERVER_IP}" \
+    --node-ip="${SERVER_IP}" \
+    --tls-san="${SERVER_IP}"
+#    --flannel-iface eth1
 
 # Wait for K3s to be ready
 echo ">>> Waiting for K3s server to be ready..."
