@@ -1,5 +1,8 @@
 .DS_Store
 
+# Vagrant files
+**/.vagrant/
+
 # Certificates and keys
 **/*.crt
 **/*.key
