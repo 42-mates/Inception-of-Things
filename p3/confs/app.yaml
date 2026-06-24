@@ -7,7 +7,7 @@ spec:
   source:
     repoURL: https://github.com/brgman/argocd.git
     targetRevision: HEAD
-    path: manifests
+    path: .
     directory:
       recurse: true
   destination:

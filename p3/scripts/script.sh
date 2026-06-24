@@ -27,9 +27,12 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 echo -e "# create the cluster"
 k3d cluster delete k3s-default 2>/dev/null || true
 k3d cluster create k3s-default \
+  # --k3s-arg "--disable=traefik@server:0" \
+  # --k3s-arg "--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@server:*" \
   --servers 1 \
   --agents 2 \
   --api-port 6443 \
+    # -p 3000:3000@loadbalancer \
   -p 8088:80@loadbalancer \
   -p 8443:443@loadbalancer
 
@@ -54,12 +57,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+kubectl delete application wil-playground -n argocd --ignore-not-found=true
+kubectl delete appproject wil-playground -n argocd --ignore-not-found=true
+kubectl delete namespace dev --ignore-not-found=true --force --grace-period=0
+
+# Ждём, пока namespace удалится
+echo "Waiting for namespace dev to be deleted..."
+until ! kubectl get namespace dev &>/dev/null; do
+    sleep 2
+done
+
 sleep 6
 
 echo -e "# create the namespace argocd and dev"
 kubectl create namespace argocd 2>/dev/null || true
 kubectl create namespace dev 2>/dev/null || true
-
 
 sleep 6
 
@@ -95,10 +107,9 @@ kubectl get secret argocd-server-tls -n argocd -o jsonpath='{.data.tls\.crt}' | 
 # Remove the problem with CRD annotation
 # sudo kubectl apply -f install.yaml --server-side --force-conflicts
 
-
 PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
-echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
+# echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
 
 echo "changing default password to argocd"
 
@@ -112,7 +123,26 @@ kubectl -n argocd patch secret argocd-secret \
     \"admin.passwordMtime\": \"$(date +%FT%T%Z)\"
   }}"
 
-echo -e "${Y}start port-forward on 8088${R}"
+kubectl apply -f project.yaml -n argocd
+kubectl apply -f app.yaml -n argocd
+
+# kubectl get pods -n dev
+# kubectl get svc -n dev
+kubectl get pods -n dev
+kubectl describe pod -l app=wil-playground -n dev
+
+until kubectl get svc wil-playground -n dev &>/dev/null; do
+    echo "Waiting for Service wil-playground ..."
+    sleep 5
+done
+
+kubectl get pods -n dev
+kubectl describe pod -l app=wil-playground -n dev
+
+sleep 5
+
+sudo kill $(sudo lsof -t -i:3000) 2>/dev/null || true
 sudo kill $(sudo lsof -t -i:8088) 2>/dev/null || true
+
 kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0 &
-echo "Username: admin, pass: argocd"
+kubectl port-forward svc/wil-playground -n dev 3000:3000 --address 0.0.0.0 &
