@@ -1,1 +1,32 @@
 .DS_Store
+
+# Certificates and keys
+**/*.crt
+**/*.key
+**/*.pem
+**/*.cert
+
+# Kubernetes / k3d
+**/kubeconfig*
+**/.kube/
+k3d-*.yaml
+**/kubeconfig-*.yaml
+
+# Argo CD
+**/argocd-server-tls*
+**/argocd-initial-admin-secret*
+
+# Local environment
+.env
+*.log
+**/.idea/
+**/.vscode/
+**/__pycache__/
+*.pyc
+
+# Temporary files
+*.tmp
+*.bak
+
+# Docker
+**/get-docker.sh
