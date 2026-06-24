@@ -9,7 +9,7 @@ Y='\e[33m'
 R='\e[0m'
 #
 # install curl
-sudo apt update && sudo apt install -y curl vim
+sudo apt update && sudo apt install -y curl vim apache2-utils
 
 echo -e "${G}# install docker${R}"
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -80,6 +80,18 @@ else
     exit 1
 fi
 
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout argocd.key \
+  -out argocd.crt \
+  -subj "/CN=argocd-server"
+
+kubectl create secret tls argocd-server-tls \
+  --cert=argocd.crt \
+  --key=argocd.key \
+  -n argocd
+
+kubectl get secret argocd-server-tls -n argocd -o jsonpath='{.data.tls\.crt}' | base64 -d > argocd.crt
+
 # Remove the problem with CRD annotation
 # sudo kubectl apply -f install.yaml --server-side --force-conflicts
 
@@ -89,8 +101,16 @@ PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=
 echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
 
 echo "changing default password to argocd"
+
+HASH=$(htpasswd -nbBC 10 "" argocd | tr -d ':\n' | sed 's/\$2y/\$2a/')
+
+echo "Password HASH: $HASH"
+
 kubectl -n argocd patch secret argocd-secret \
-  -p "{\"stringData\": {\"admin.password\": \"argocd\", \"admin.passwordMtime\": \"$(date +%FT%T%Z)\"}}"
+  -p "{\"stringData\": {
+    \"admin.password\": \"$HASH\",
+    \"admin.passwordMtime\": \"$(date +%FT%T%Z)\"
+  }}"
 
 echo -e "${Y}start port-forward on 8088${R}"
 sudo kill $(sudo lsof -t -i:8088) 2>/dev/null || true
