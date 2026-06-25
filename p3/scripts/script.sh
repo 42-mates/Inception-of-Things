@@ -112,4 +112,4 @@ kubectl get pods -n dev
 kubectl describe pod -l app=wil-playground -n dev
 
 sudo kill $(sudo lsof -t -i:8889) 2>/dev/null || true
-kubectl port-forward svc/argocd-server -n argocd 8889:443 --address 0.0.0.0 &
+kubectl port-forward svc/argocd-server -n argocd 8889:443 --address 0.0.0.0 > /dev/null 2>&1 &
