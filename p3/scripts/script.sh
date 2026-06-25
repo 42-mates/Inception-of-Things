@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# ssh-copy-id -p 2222 iot@localhost
 # ssh-keygen -t ed25519 -C "abergman@student.42.fr"
 # cat ~/.ssh/id_ed25519.pub
 #
@@ -7,14 +7,13 @@ G='\e[32m'
 RE='\e[31m'
 Y='\e[33m'
 R='\e[0m'
-#
-# install curl
+
 sudo apt update && sudo apt install -y curl vim apache2-utils
 
-# echo -e "${G}# install docker${R}"
-# curl -fsSL https://get.docker.com -o get-docker.sh
-# sudo sh get-docker.sh
-# rm -f get-docker.sh
+echo -e "${G}# install docker${R}"
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+rm -f get-docker.sh
 
 echo -e "# install kubectl"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -29,7 +28,7 @@ k3d cluster delete k3s-default 2>/dev/null || true
 k3d cluster create k3s-default \
   -p 8888:80@loadbalancer
 
-sleep 6
+sleep 1
 
 echo -e "# merge and switch context properly"
 k3d kubeconfig merge k3s-default --kubeconfig-switch-context
@@ -54,25 +53,23 @@ kubectl delete application wil-playground -n argocd --ignore-not-found=true
 kubectl delete appproject wil-playground -n argocd --ignore-not-found=true
 kubectl delete namespace dev --ignore-not-found=true --force --grace-period=0
 
-# Ждём, пока namespace удалится
 echo "Waiting for namespace dev to be deleted..."
 until ! kubectl get namespace dev &>/dev/null; do
-    sleep 2
+    sleep 1
 done
 
-sleep 6
+sleep 1
 
 echo -e "# create the namespace argocd and dev"
 kubectl create namespace argocd 2>/dev/null || true
 kubectl create namespace dev 2>/dev/null || true
 
-sleep 6
+sleep 1
 
 echo -e "${G}install ArgoCD${R}"
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 # sed -i '/kubectl.kubernetes.io\/last-applied-configuration/d' *.yaml
 
-# sleep 10
 echo -e "${G}wait preparing of the pods of argocd${R}"
 # sudo kubectl get pods -n argocd -w
 
@@ -81,32 +78,14 @@ kubectl wait --for=condition=ready pod --all -n argocd --timeout=10m
 if [ $? -eq 0 ]; then
     echo -e "${G}All Argo CD pods are ready!${R}"
 else
-    echo -e "${RE}Timeout${R}"
     exit 1
 fi
 
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout argocd.key \
-  -out argocd.crt \
-  -subj "/CN=argocd-server"
-
-kubectl create secret tls argocd-server-tls \
-  --cert=argocd.crt \
-  --key=argocd.key \
-  -n argocd
-
-kubectl get secret argocd-server-tls -n argocd -o jsonpath='{.data.tls\.crt}' | base64 -d > argocd.crt
-
-# Remove the problem with CRD annotation
-# sudo kubectl apply -f install.yaml --server-side --force-conflicts
-
 PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-
-# echo -e "${G}Username: admin, Password: ${PASSWORD} ${R}"
 
 echo "changing default password to argocd"
 
-HASH=$(htpasswd -nbBC 10 "" argocd | tr -d ':\n' | sed 's/\$2y/\$2a/')
+HASH=$(htpasswd -nbBC 10 "" admin | tr -d ':\n' | sed 's/\$2y/\$2a/')
 
 echo "Password HASH: $HASH"
 
@@ -126,7 +105,7 @@ kubectl describe pod -l app=wil-playground -n dev
 
 until kubectl get svc wil-playground -n dev &>/dev/null; do
     echo "Waiting for Service wil-playground ..."
-    sleep 5
+    sleep 1
 done
 
 kubectl get pods -n dev
