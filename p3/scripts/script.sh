@@ -11,10 +11,10 @@ R='\e[0m'
 # install curl
 sudo apt update && sudo apt install -y curl vim apache2-utils
 
-echo -e "${G}# install docker${R}"
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-rm -f get-docker.sh
+# echo -e "${G}# install docker${R}"
+# curl -fsSL https://get.docker.com -o get-docker.sh
+# sudo sh get-docker.sh
+# rm -f get-docker.sh
 
 echo -e "# install kubectl"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -27,13 +27,7 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 echo -e "# create the cluster"
 k3d cluster delete k3s-default 2>/dev/null || true
 k3d cluster create k3s-default \
-  # --k3s-arg "--disable=traefik@server:0" \
-  # --k3s-arg "--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@server:*" \
-  --servers 1 \
-  --agents 2 \
-  --api-port 6443 \
-    # -p 3000:3000@loadbalancer \
-  -p 8088:80@loadbalancer \
+  -p 8080:80@loadbalancer \
   -p 8443:443@loadbalancer
 
 sleep 6
@@ -123,8 +117,8 @@ kubectl -n argocd patch secret argocd-secret \
     \"admin.passwordMtime\": \"$(date +%FT%T%Z)\"
   }}"
 
-kubectl apply -f project.yaml -n argocd
-kubectl apply -f app.yaml -n argocd
+kubectl apply -f ../confs/project.yaml -n argocd
+kubectl apply -f ../confs/app.yaml -n argocd
 
 # kubectl get pods -n dev
 # kubectl get svc -n dev
@@ -139,10 +133,5 @@ done
 kubectl get pods -n dev
 kubectl describe pod -l app=wil-playground -n dev
 
-sleep 5
-
-sudo kill $(sudo lsof -t -i:3000) 2>/dev/null || true
-sudo kill $(sudo lsof -t -i:8088) 2>/dev/null || true
-
-kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0 &
-kubectl port-forward svc/wil-playground -n dev 3000:3000 --address 0.0.0.0 &
+sudo kill $(sudo lsof -t -i:8081) 2>/dev/null || true
+kubectl port-forward svc/argocd-server -n argocd 8081:443 --address 0.0.0.0 &
