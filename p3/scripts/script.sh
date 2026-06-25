@@ -27,8 +27,7 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 echo -e "# create the cluster"
 k3d cluster delete k3s-default 2>/dev/null || true
 k3d cluster create k3s-default \
-  -p 8080:80@loadbalancer \
-  -p 8443:443@loadbalancer
+  -p 8888:80@loadbalancer
 
 sleep 6
 
@@ -133,5 +132,5 @@ done
 kubectl get pods -n dev
 kubectl describe pod -l app=wil-playground -n dev
 
-sudo kill $(sudo lsof -t -i:8081) 2>/dev/null || true
-kubectl port-forward svc/argocd-server -n argocd 8081:443 --address 0.0.0.0 &
+sudo kill $(sudo lsof -t -i:8889) 2>/dev/null || true
+kubectl port-forward svc/argocd-server -n argocd 8889:443 --address 0.0.0.0 &
