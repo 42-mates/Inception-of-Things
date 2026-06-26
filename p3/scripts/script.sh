@@ -15,6 +15,14 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm -f get-docker.sh
 
+sudo usermod -aG docker $USER
+
+newgrp docker 2>/dev/null || true
+echo "Current groups:"
+groups | grep -E 'docker|root'
+echo ""
+docker ps || echo "Docker test failed"
+
 echo -e "# install kubectl"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -28,7 +36,7 @@ k3d cluster delete k3s-default 2>/dev/null || true
 k3d cluster create k3s-default \
   -p 8888:80@loadbalancer
 
-sleep 1
+sleep 3
 
 echo -e "# merge and switch context properly"
 k3d kubeconfig merge k3s-default --kubeconfig-switch-context
@@ -55,19 +63,18 @@ kubectl delete namespace dev --ignore-not-found=true --force --grace-period=0
 
 echo "Waiting for namespace dev to be deleted..."
 until ! kubectl get namespace dev &>/dev/null; do
-    sleep 1
+    sleep 3
 done
-
-sleep 1
 
 echo -e "# create the namespace argocd and dev"
 kubectl create namespace argocd 2>/dev/null || true
 kubectl create namespace dev 2>/dev/null || true
 
-sleep 1
+sleep 3
 
 echo -e "${G}install ArgoCD${R}"
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
 # sed -i '/kubectl.kubernetes.io\/last-applied-configuration/d' *.yaml
 
 echo -e "${G}wait preparing of the pods of argocd${R}"
@@ -100,16 +107,14 @@ kubectl apply -f ../confs/app.yaml -n argocd
 
 # kubectl get pods -n dev
 # kubectl get svc -n dev
-kubectl get pods -n dev
-kubectl describe pod -l app=wil-playground -n dev
 
 until kubectl get svc wil-playground -n dev &>/dev/null; do
     echo "Waiting for Service wil-playground ..."
-    sleep 1
+    sleep 5
 done
 
 kubectl get pods -n dev
 kubectl describe pod -l app=wil-playground -n dev
 
-sudo kill $(sudo lsof -t -i:8889) 2>/dev/null || true
-kubectl port-forward svc/argocd-server -n argocd 8889:443 --address 0.0.0.0 > /dev/null 2>&1 &
+sudo kill $(sudo lsof -t -i:8880) 2>/dev/null || true
+kubectl port-forward svc/argocd-server -n argocd 8880:443 --address 0.0.0.0 > /dev/null 2>&1 &
